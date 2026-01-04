@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 import numpy as np
-from openai import OpenAI
+from .services import AIService
 
 
 @dataclass
@@ -28,14 +28,12 @@ class RAGService:
         self,
         csv_path: str,
         db_path: str,
-        embedding_model: str = "text-embedding-3-small",
-        chat_model: str = "gpt-4o-mini",
+        ai_service: AIService,
         top_k: int = 5,
     ) -> None:
         self.csv_path = csv_path
         self.db_path = db_path
-        self.embedding_model = embedding_model
-        self.chat_model = chat_model
+        self.ai_service = ai_service
         self.top_k = top_k
         self._lock = threading.Lock()
         self._chunks: List[MovieChunk] = []
@@ -43,21 +41,20 @@ class RAGService:
         if db_dir:
             os.makedirs(db_dir, exist_ok=True)
 
-    def answer_question(self, question: str, api_key: str) -> str:
-        client = OpenAI(api_key=api_key)
-        self._ensure_index(client)
-        query_embedding = self._embed_texts(client, [question])[0]
+    def answer_question(self, question: str) -> str:
+        self._ensure_index()
+        query_embedding = self.ai_service.embed_texts([question])[0]
         matches = self._search(query_embedding)
         context = self._format_context(matches)
-        return self._generate_answer(client, question, context)
+        return self.ai_service.generate_answer(question, context)
 
-    def _ensure_index(self, client: OpenAI) -> None:
+    def _ensure_index(self) -> None:
         with self._lock:
             if self._chunks:
                 return
             self._init_db()
             if not self._db_has_embeddings():
-                self._build_index(client)
+                self._build_index()
             self._chunks = self._load_chunks_from_db()
 
     def _init_db(self) -> None:
@@ -83,10 +80,10 @@ class RAGService:
             row = conn.execute("SELECT COUNT(1) FROM movies").fetchone()
             return bool(row and row[0])
 
-    def _build_index(self, client: OpenAI) -> None:
+    def _build_index(self) -> None:
         rows = self._read_csv_rows()
         texts = [row["text"] for row in rows]
-        embeddings = self._embed_texts(client, texts)
+        embeddings = self.ai_service.embed_texts(texts)
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("DELETE FROM movies")
             for row, embedding in zip(rows, embeddings):
@@ -149,18 +146,6 @@ class RAGService:
         }
         return json.dumps(payload, ensure_ascii=True)
 
-    def _embed_texts(self, client: OpenAI, texts: List[str]) -> List[np.ndarray]:
-        embeddings: List[np.ndarray] = []
-        batch_size = 100
-        for start in range(0, len(texts), batch_size):
-            batch = texts[start : start + batch_size]
-            response = client.embeddings.create(
-                model=self.embedding_model,
-                input=batch,
-            )
-            for item in response.data:
-                embeddings.append(np.array(item.embedding, dtype=np.float32))
-        return embeddings
 
     def _load_chunks_from_db(self) -> List[MovieChunk]:
         chunks: List[MovieChunk] = []
@@ -216,23 +201,3 @@ class RAGService:
             )
         return "\n\n".join(parts)
 
-    def _generate_answer(self, client: OpenAI, question: str, context: str) -> str:
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You answer questions using the provided movie context. "
-                    "If the context does not contain the answer, say you do not know."
-                ),
-            },
-            {
-                "role": "user",
-                "content": f"Context:\n{context}\n\nQuestion: {question}",
-            },
-        ]
-        response = client.chat.completions.create(
-            model=self.chat_model,
-            messages=messages,
-            temperature=0.2,
-        )
-        return response.choices[0].message.content.strip()
