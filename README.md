@@ -17,7 +17,7 @@ Python chat controller for AI RAG
 ## For using aider_chat agent in terminal
 export LM_STUDIO_API_BASE=http://localhost:1234/v1
 export LM_STUDIO_API_KEY=dummy-api-key
-> aider --model lm_studio/qwen2.5-coder-32b-instruct --no-show-model-warnings
+> aider --model lm_studio/qwen2.5-coder-32b-instruct --no-show-model-warnings --edit-format diff
 
 
 

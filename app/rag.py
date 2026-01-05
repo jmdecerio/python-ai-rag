@@ -1,12 +1,12 @@
 import csv
 import json
-from dataclasses import dataclass
 from typing import Any, Dict, List
 
 import numpy as np
-from .services import AIService
-from .database import DatabaseService
 
+from .database import DatabaseService
+from .services import AIService
+from .models import MovieChunk
 
 class RAGService:
     def __init__(
