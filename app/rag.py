@@ -6,19 +6,7 @@ from typing import Any, Dict, List
 import numpy as np
 from .services import AIService
 from .database import DatabaseService
-
-
-@dataclass
-class MovieChunk:
-    movie_id: str
-    title: str
-    overview: str
-    genres: str
-    release_date: str
-    runtime: str
-    credits: str
-    text: str
-    embedding: np.ndarray
+from .models import MovieChunk
 
 
 class RAGService:
