@@ -7,19 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 import numpy as np
-
-
-@dataclass
-class MovieChunk:
-    movie_id: str
-    title: str
-    overview: str
-    genres: str
-    release_date: str
-    runtime: str
-    credits: str
-    text: str
-    embedding: np.ndarray
+from .models import MovieChunk
 
 
 class DatabaseService:

@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 import numpy as np
 from .services import AIService
 from .database import DatabaseService
-from .models import MovieChunk
 
 
 class RAGService:
