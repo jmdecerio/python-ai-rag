@@ -1,8 +1,9 @@
-import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import chromadb
-from .models import MovieChunk
 import numpy as np
+
+from .models import MovieChunk
+
 
 class DatabaseService:
     def __init__(self, chroma_path: str) -> None:

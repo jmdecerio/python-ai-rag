@@ -2,11 +2,10 @@ import csv
 import json
 from typing import Any, Dict, List
 
-import numpy as np
-
 from .database import DatabaseService
-from .services import AIService
 from .models import MovieChunk
+from .services import AIService
+
 
 class RAGService:
     def __init__(
