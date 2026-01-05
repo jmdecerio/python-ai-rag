@@ -14,7 +14,7 @@ ai_service = AIService(
 
 rag_service = RAGService(
     csv_path=settings.csv_path,
-    db_path=settings.db_path,
+    chroma_path=settings.chroma_path,
     ai_service=ai_service,
     top_k=settings.top_k,
 )

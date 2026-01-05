@@ -12,25 +12,25 @@ class RAGService:
     def __init__(
         self,
         csv_path: str,
-        db_path: str,
+        chroma_path: str,
         ai_service: AIService,
         top_k: int = 5,
     ) -> None:
         self.csv_path = csv_path
-        self.db_path = db_path
+        self.chroma_path = chroma_path
         self.ai_service = ai_service
         self.top_k = top_k
-        self.database_service = DatabaseService(db_path)
+        self.database_service = DatabaseService(chroma_path)
 
     def answer_question(self, question: str) -> str:
         self._ensure_index()
         query_embedding = self.ai_service.embed_texts([question])[0]
-        matches = self._search(query_embedding)
+        matches = self.database_service.search(query_embedding, top_k=self.top_k)
         context = self._format_context(matches)
         return self.ai_service.generate_answer(question, context)
 
     def _ensure_index(self) -> None:
-        self.database_service._ensure_index()
+        self.database_service._ensure_index(self)
 
 
 
@@ -67,18 +67,6 @@ class RAGService:
         return json.dumps(payload, ensure_ascii=True)
 
 
-
-    def _search(self, query_embedding: np.ndarray) -> List[MovieChunk]:
-        chunks = self.database_service._chunks
-        if not chunks:
-            return []
-        query_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-8)
-        scores: List[float] = []
-        for chunk in chunks:
-            chunk_norm = chunk.embedding / (np.linalg.norm(chunk.embedding) + 1e-8)
-            scores.append(float(np.dot(query_norm, chunk_norm)))
-        top_indices = np.argsort(scores)[-self.top_k :][::-1]
-        return [chunks[idx] for idx in top_indices]
 
     def _format_context(self, chunks: List[MovieChunk]) -> str:
         parts = []
