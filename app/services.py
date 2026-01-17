@@ -1,6 +1,11 @@
 import numpy as np
 from openai import OpenAI
 from typing import List
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+)
 
 class AIService:
     def __init__(self, api_key: str, embedding_model: str, chat_model: str):
@@ -30,12 +35,13 @@ Context:
 
 Question: {question}
 Answer:"""
+        messages: List[ChatCompletionMessageParam] = [
+            ChatCompletionSystemMessageParam(role="system", content="You are a helpful assistant."),
+            ChatCompletionUserMessageParam(role="user", content=prompt),
+        ]
         response = self.client.chat.completions.create(
             model=self.chat_model,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt},
-            ],
+            messages=messages,
             temperature=0,
         )
         return response.choices[0].message.content or ""
